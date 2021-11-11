@@ -20,6 +20,10 @@ type UpdateResourceInput struct {
 	UpdateOptions
 }
 
+type ListContainersInput struct {
+	ListOptions
+}
+
 func TestInitRuntimeClient(t *testing.T) {
 	flag.Parse()
 
@@ -86,4 +90,34 @@ func TestUpdateResource(t *testing.T) {
 	}
 
 	t.Logf("TestUpdateResource succeed")
+}
+
+func TestListContainers(t *testing.T) {
+	flag.Parse()
+
+	t.Logf("TestListContainers runtimeEndpoint %v, runtimeEndpointIsSet %v",
+		runtimeEndpoint, runtimeEndpointIsSet)
+
+	runtimeClient, runtimeConn, err := GetRuntimeClient(*runtimeEndpoint, *runtimeEndpointIsSet)
+	if err != nil {
+		t.Fatalf("TestUpdateResource GetRuntimeClient failed %s", err.Error())
+	}
+	defer grpcc.CloseGrpcConnection(runtimeConn)
+
+	var cases = []ListContainersInput{
+		{
+			ListOptions: ListOptions{},
+		},
+	}
+
+	for _, c := range cases {
+		containers, err := ListContainers(runtimeClient, c.ListOptions)
+		if err != nil {
+			t.Fatalf("TestListContainers failed %s", err.Error())
+		}
+
+		t.Logf("containers %v", containers)
+	}
+
+	t.Logf("TestListContainers succeed")
 }

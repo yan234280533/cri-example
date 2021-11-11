@@ -2,11 +2,14 @@ package runtime
 
 import (
 	"fmt"
-	goruntime "runtime"
-
+	"github.com/gocrane-io/cri-example/util"
 	"golang.org/x/net/context"
 	pb "k8s.io/cri-api/pkg/apis/runtime/v1alpha2"
 	"k8s.io/klog"
+	"log"
+	goruntime "runtime"
+	"sort"
+	"strings"
 )
 
 type UpdateOptions struct {
@@ -28,6 +31,45 @@ type UpdateOptions struct {
 	CpusetCpus string
 	// CpusetMems constrains the allowed set of memory nodes. Default: "" (not specified).
 	CpusetMems string
+}
+
+type ListOptions struct {
+	// id of container or sandbox
+	id string
+	// podID of container
+	podID string
+	// Regular expression pattern to match pod or container
+	nameRegexp string
+	// Regular expression pattern to match the pod namespace
+	podNamespaceRegexp string
+	// state of the sandbox
+	state string
+	// show verbose info for the sandbox
+	verbose bool
+	// labels are selectors for the sandbox
+	labels map[string]string
+	// quiet is for listing just container/sandbox/image IDs
+	quiet bool
+	// output format
+	output string
+	// all containers
+	all bool
+	// latest container
+	latest bool
+	// last n containers
+	last int
+	// out with truncating the id
+	noTrunc bool
+	// image used by the container
+	image string
+}
+
+type containerByCreated []*pb.Container
+
+func (a containerByCreated) Len() int      { return len(a) }
+func (a containerByCreated) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (a containerByCreated) Less(i, j int) bool {
+	return a[i].CreatedAt > a[j].CreatedAt
 }
 
 // UpdateContainerResources sends an UpdateContainerResourcesRequest to the server, and parses the returned UpdateContainerResourcesResponse.
@@ -88,4 +130,98 @@ func RemoveContainer(client pb.RuntimeServiceClient, ContainerId string) error {
 
 	klog.V(5).Infof("RemoveContainerResponse: %v", r)
 	return nil
+}
+
+// ListContainers sends a ListContainerRequest to the server, and parses the returned ListContainerResponse.
+func ListContainers(runtimeClient pb.RuntimeServiceClient, opts ListOptions) ([]*pb.Container, error) {
+	filter := &pb.ContainerFilter{}
+	if opts.id != "" {
+		filter.Id = opts.id
+	}
+
+	if opts.podID != "" {
+		filter.PodSandboxId = opts.podID
+	}
+
+	st := &pb.ContainerStateValue{}
+	if !opts.all && opts.state == "" {
+		st.State = pb.ContainerState_CONTAINER_RUNNING
+		filter.State = st
+	}
+
+	if opts.state != "" {
+		st.State = pb.ContainerState_CONTAINER_UNKNOWN
+		switch strings.ToLower(opts.state) {
+		case "created":
+			st.State = pb.ContainerState_CONTAINER_CREATED
+			filter.State = st
+		case "running":
+			st.State = pb.ContainerState_CONTAINER_RUNNING
+			filter.State = st
+		case "exited":
+			st.State = pb.ContainerState_CONTAINER_EXITED
+			filter.State = st
+		case "unknown":
+			st.State = pb.ContainerState_CONTAINER_UNKNOWN
+			filter.State = st
+		default:
+			log.Fatalf("--state should be one of created, running, exited or unknown")
+		}
+	}
+
+	if opts.latest || opts.last > 0 {
+		// Do not filter by state if latest/last is specified.
+		filter.State = nil
+	}
+
+	if opts.labels != nil {
+		filter.LabelSelector = opts.labels
+	}
+
+	request := &pb.ListContainersRequest{
+		Filter: filter,
+	}
+
+	klog.V(5).Infof("ListContainerRequest: %v", request)
+
+	r, err := runtimeClient.ListContainers(context.Background(), request)
+	if err != nil {
+		return []*pb.Container{}, err
+	}
+
+	klog.V(5).Infof("ListContainerResponse: %v", r)
+
+	r.Containers = filterContainersList(r.GetContainers(), opts)
+
+	return r.Containers, nil
+}
+
+func filterContainersList(containersList []*pb.Container, opts ListOptions) []*pb.Container {
+	var filtered = []*pb.Container{}
+
+	for _, c := range containersList {
+		// Filter by pod name/namespace regular expressions.
+		if util.MatchesRegex(opts.nameRegexp, c.Metadata.Name) {
+			filtered = append(filtered, c)
+		}
+	}
+
+	sort.Sort(containerByCreated(filtered))
+	n := len(filtered)
+	if opts.latest {
+		n = 1
+	}
+
+	if opts.last > 0 {
+		n = opts.last
+	}
+
+	n = func(a, b int) int {
+		if a < b {
+			return a
+		}
+		return b
+	}(n, len(filtered))
+
+	return filtered[:n]
 }
