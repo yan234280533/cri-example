@@ -4,9 +4,8 @@ go 1.16
 
 require (
 	golang.org/x/net v0.0.0-20210825183410-e898025ed96a
-	golang.org/x/tools v0.1.7 // indirect
 	google.golang.org/grpc v1.42.0
-	k8s.io/cri-api v0.22.0
+	k8s.io/cri-api v0.22.3
 	k8s.io/klog v1.0.0
 	k8s.io/kubernetes v1.22.3
 )
@@ -28,7 +27,6 @@ replace (
 	k8s.io/cri-api => k8s.io/cri-api v0.22.3
 	k8s.io/csi-translation-lib => k8s.io/csi-translation-lib v0.22.3
 	k8s.io/kube-aggregator => k8s.io/kube-aggregator v0.22.3
-
 	k8s.io/kube-controller-manager => k8s.io/kube-controller-manager v0.22.3
 	k8s.io/kube-proxy => k8s.io/kube-proxy v0.22.3
 	k8s.io/kube-scheduler => k8s.io/kube-scheduler v0.22.3
