@@ -10,8 +10,8 @@ import (
 	clientset "k8s.io/client-go/kubernetes"
 )
 
-// updateNodeResources be used to update node resource
-func updateNodeCondition(node *v1.Node, condition v1.NodeCondition) (*v1.Node, error) {
+// updateNodeConditions be used to update node condition
+func updateNodeConditions(node *v1.Node, condition v1.NodeCondition) (*v1.Node, error) {
 	if node == nil {
 		return nil, fmt.Errorf("updateNodeCondition node is empty")
 	}
@@ -40,6 +40,11 @@ func updateNodeCondition(node *v1.Node, condition v1.NodeCondition) (*v1.Node, e
 	return updatedNode, nil
 }
 
+// updateNodeTaints be used to update node taint
+func updateNodeTaints(node *v1.Node, condition v1.Taint) (*v1.Node, error) {
+	return nil, nil
+}
+
 func GetNodeCondition(node *v1.Node) ([]v1.NodeCondition, error) {
 
 	if node == nil {
@@ -59,6 +64,7 @@ func FilterNodeConditionByType(conditions []v1.NodeCondition, conditionType stri
 	return v1.NodeCondition{}, fmt.Errorf("condition %s is not found", conditionType)
 }
 
+// updateNodeStatus be used to update node status by communication with api-server
 func updateNodeStatus(client clientset.Interface, updateNode *v1.Node) error {
 	for i := 0; i < 3; i++ {
 		_, err := client.CoreV1().Nodes().UpdateStatus(context.Background(), updateNode, metav1.UpdateOptions{})

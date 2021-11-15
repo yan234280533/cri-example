@@ -50,6 +50,7 @@ func getImageClientConnection(imageEndpoint string, imageEndpointIsSet bool) (*g
 	return grpcc.InitGrpcConnection([]string{imageEndpoint})
 }
 
+//GetRuntimeClient get the runtime client
 func GetRuntimeClient(runtimeEndpoint string, runtimeEndpointIsSet bool) (pb.RuntimeServiceClient, *grpc.ClientConn, error) {
 	// Set up a connection to the server.
 	conn, err := getRuntimeClientConnection(runtimeEndpoint, runtimeEndpointIsSet)
@@ -60,6 +61,7 @@ func GetRuntimeClient(runtimeEndpoint string, runtimeEndpointIsSet bool) (pb.Run
 	return runtimeClient, conn, nil
 }
 
+//GetImageClient get the runtime client
 func GetImageClient(imageEndpoint string, imageEndpointIsSet bool) (pb.ImageServiceClient, *grpc.ClientConn, error) {
 	// Set up a connection to the server.
 	conn, err := getImageClientConnection(imageEndpoint, imageEndpointIsSet)

@@ -9,7 +9,8 @@ import (
 	clientset "k8s.io/client-go/kubernetes"
 )
 
-func EvictPodWithGracePerio(client clientset.Interface, pod v1.Pod, gracePeriodSeconds int64) error {
+//EvictPodWithGracePeriod evict pod with grace period
+func EvictPodWithGracePeriod(client clientset.Interface, pod v1.Pod, gracePeriodSeconds int64) error {
 	return client.CoreV1().Pods(pod.Namespace).Evict(context.Background(), &policy.Eviction{
 		ObjectMeta:    pod.ObjectMeta,
 		DeleteOptions: metav1.NewDeleteOptions(gracePeriodSeconds),
