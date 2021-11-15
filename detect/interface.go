@@ -1,6 +1,7 @@
 package detect
 
 import (
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 )
 
@@ -19,4 +20,48 @@ type DetectionCondition struct {
 type DetectionInterface interface {
 	GetNodeDetectionCondition() []DetectionCondition
 	GetPodDetectionCondition() []DetectionCondition
+}
+
+type AvoidanceInterface interface {
+	AvoidanceActionMerge(detectConditions []DetectionCondition) (*AvoidanceActionStruct, error)
+}
+
+type AvoidanceActionStruct struct {
+	BlockScheduledAction *BlockScheduledActionStruct
+	RetainActions        []RetainActionStruct
+	EvictActions         []EvictActionStruct
+}
+
+type BlockScheduledActionStruct struct {
+	PodQOSClass        v1.PodQOSClass
+	PriorityClassValue uint64
+}
+
+type CPURestrainActionStruct struct {
+	//the step of cpu share and limit for once down-size (1-100)
+	// +optional
+	StepCPURatio uint64 `json:"stepCPURatio,omitempty"`
+}
+
+type MemoryRestrainActionStruct struct {
+	// to force gc the page cache of low level pods
+	// +optional
+	ForceGC bool `json:"forceGC,omitempty"`
+}
+
+type RetainActionStruct struct {
+	CPURestrain    *CPURestrainActionStruct
+	MemoryRestrain *MemoryRestrainActionStruct
+	RetainPods     []types.NamespacedName
+}
+
+type EvictActionStruct struct {
+	DeletionGracePeriodSeconds *int32 `json:"deletionGracePeriodSeconds,omitempty"`
+	EvictPods                  []types.NamespacedName
+}
+
+func AvoidanceActionMerge(detectConditions []DetectionCondition) (*AvoidanceActionStruct, error) {
+	//step1 do BlockScheduled merge
+	//step2 do Retain merge
+	//step3 do Evict merge  FilterAndSortEvictPods
 }
