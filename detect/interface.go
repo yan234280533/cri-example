@@ -14,7 +14,7 @@ type DetectionCondition struct {
 	Triggered bool
 	// if the policy triggered restored action
 	Restored bool
-	// the influenced pod list, which is used to determine which pods should to do action
+	// the influenced pod list
 	// node detection the pod list is empty
 	BeInfluencedPods []types.NamespacedName
 }
@@ -76,7 +76,7 @@ type EvictActionStruct struct {
 	EvictPods                  []types.NamespacedName
 }
 
-func AvoidanceActionMerge(podDetectConditions []DetectionCondition, nodeDetectConditions []DetectionCondition) (*AvoidanceActionStruct, error) {
+func AvoidanceActionsMerge(podDetectConditions []DetectionCondition, nodeDetectConditions []DetectionCondition) (*AvoidanceActionStruct, error) {
 	//step1 do BlockScheduled merge
 	//step2 do Retain merge FilterAndSortRestrainPods
 	//step3 do Evict merge  FilterAndSortEvictPods
